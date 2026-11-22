@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.SJLS27.OpenBurn</id>
+
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>OpenBurn</name>
+  <summary>Design, preview and control laser cutters and engravers</summary>
+
+  <developer id="io.github.sjls27">
+    <name>Santiago Leal</name>
+  </developer>
+
+  <description>
+    <p>
+      OpenBurn is an open-source application for designing, previewing and controlling laser
+      cutters and engravers. It is inspired by the LightBurn workflow and can open and export
+      LightBurn projects.
+    </p>
+    <p>Main features:</p>
+    <ul>
+      <li>Vector design tools: lines, shapes, text, boolean operations, offsets and node editing.</li>
+      <li>Layers with line, fill, offset-fill and image modes, kerf compensation and tabs.</li>
+      <li>LightBurn-style cut settings editor and cut planner with order-by layer, group and priority.</li>
+      <li>Animated preview that shows the toolpaths and the machine travel moves between cuts.</li>
+      <li>GRBL control over Web Serial or the built-in simulator, with jog, homing and framing.</li>
+      <li>Import and export of LightBurn .lbrn and .lbrn2 projects, plus GCode, SVG and DXF.</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.SJLS27.OpenBurn.desktop</launchable>
+
+  <url type="homepage">https://github.com/SJLS27/openburn</url>
+  <url type="bugtracker">https://github.com/SJLS27/openburn/issues</url>
+  <url type="vcs-browser">https://github.com/SJLS27/openburn</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Design workspace</caption>
+      <image type="source">https://raw.githubusercontent.com/SJLS27/openburn/main/docs/screenshots/overview.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Animated preview with machine travel moves</caption>
+      <image type="source">https://raw.githubusercontent.com/SJLS27/openburn/main/docs/screenshots/preview.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Material test</caption>
+      <image type="source">https://raw.githubusercontent.com/SJLS27/openburn/main/docs/screenshots/material-test.png</image>
+    </screenshot>
+  </screenshots>
+
+  <categories>
+    <category>Graphics</category>
+    <category>Engineering</category>
+  </categories>
+
+  <keywords>
+    <keyword>laser</keyword>
+    <keyword>cutter</keyword>
+    <keyword>engraver</keyword>
+    <keyword>grbl</keyword>
+    <keyword>lightburn</keyword>
+    <keyword>cad</keyword>
+    <keyword>gcode</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1"/>
+
+  <releases>
+    <release version="0.11.0" date="2026-11-13">
+      <description>
+        <p>Full Bézier node editing and object snapping with alignment guides.</p>
+        <ul>
+          <li>Full node editing: Bézier handles, add/delete nodes, corner/smooth/symmetric, line ↔ curve.</li>
+          <li>Object snapping to vertices, centres, midpoints and intersections with alignment guides.</li>
+          <li>Versioned snap preferences and status bar snap controls.</li>
+          <li>Headless desktop verification loop and automated documentation captures.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.10.0" date="2026-11-08">
+      <description>
+        <p>Text alignment, shape numeric fields, canvas rulers and smoother preview.</p>
+        <ul>
+          <li>Rules and live measurements (W × H, ΔX/ΔY, angle, length) around the canvas.</li>
+          <li>Text alignment and shape fields that operate on the real bounding box with an aspect lock.</li>
+          <li>Faster preview with cached background, path and raster layers.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.9.0" date="2026-11-01">
+      <description>
+        <p>Desktop fundamentals: autosave and crash recovery, recent files, welcome screen, drag and drop, persistent window and bounded undo history.</p>
+      </description>
+    </release>
+    <release version="0.8.0" date="2026-10-28">
+      <description>
+        <p>Automatic updates, Inkscape clipboard paste as editable vectors, image layers and middle-button panning.</p>
+        <ul>
+          <li>Automatic updates with electron-updater (background check, download progress, restart and install).</li>
+          <li>Paste Inkscape SVG as editable paths on Windows, macOS and Linux (content-based clipboard detection).</li>
+          <li>Pasted or imported images go to an Image-mode layer, so they show in the preview and engrave.</li>
+          <li>Pan the canvas by dragging with the middle mouse button.</li>
+          <li>Consistent paste from Ctrl+V, the toolbar and the Edit/context menus.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.7.1" date="2026-10-25">
+      <description>
+        <p>Update to Electron 45 and add Flatpak packaging.</p>
+      </description>
+    </release>
+  </releases>
+</component>

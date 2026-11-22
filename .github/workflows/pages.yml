@@ -1,0 +1,77 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+
+      - name: Test
+        run: npm test
+
+      - name: Build the site
+        env:
+          # Must match the repository name. Pages serves this project at /Sunburn/.
+          VITE_BASE_PATH: /Sunburn/
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+        run: npm run build:web
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Creating the Pages site needs repository administration. The workflow
+      # token is not allowed to hold that, so this step 403s until someone sets
+      # Settings → Pages → Source → GitHub Actions once. After that it is a no-op.
+      - name: Enable GitHub Pages
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const opts = { owner: context.repo.owner, repo: context.repo.repo };
+            try {
+              await github.rest.repos.getPages(opts);
+              return;
+            } catch (error) {
+              if (error.status !== 404 && error.status !== 403) throw error;
+            }
+            await github.rest.repos.createPagesSite({
+              ...opts,
+              build_type: "workflow",
+            });
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
