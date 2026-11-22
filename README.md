@@ -1,5 +1,7 @@
 # SunBurn
 
+Live app: https://rrkennedy69.github.io/Sunburn/
+
 SunBurn is a free laser cutting and engraving app for a small woodwork and 3D-printing shop. It runs in the browser, drives GRBL lasers over Web Serial, and can keep projects in Google Drive.
 
 The editor is [OpenBurn](https://github.com/SJLS27/openburn) 0.11.0 (MIT), rebranded and restyled to sit next to [PrintCaddy](https://github.com/rrkennedy69/printcaddy-rs). OpenBurn’s license is in `LICENSE`. Santiago Leal (SJLS27) wrote OpenBurn; pkkid contributed. SunBurn is not affiliated with LightBurn Software Inc.
