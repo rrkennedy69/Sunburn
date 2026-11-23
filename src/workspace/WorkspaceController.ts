@@ -41,6 +41,7 @@ import {
 } from '@/core/fileApi';
 import { dropKindForFile } from '@/core/dropRouting';
 import { addRecentFile } from '@/state/recentStore';
+import { filesystemPath, rememberProject } from '@/state/projectLibrary';
 import { requestDiscardConfirmation } from '@/state/discardGuard';
 import { booleanObjects, isConvertible, objectToPathData } from '@/geometry/paperOps';
 import { offsetPathData } from '@/geometry/offset';
@@ -1708,9 +1709,9 @@ export class WorkspaceController implements WorkspaceApi {
   }
 
   /** Re-open a project from a known path (recent files, command line, drop). */
-  async openPath(filePath: string): Promise<void> {
+  async openPath(filePath: string): Promise<boolean> {
     const api = window.openburn;
-    if (!api) return;
+    if (!api) return false;
     const name = filePath.split(/[\\/]/).pop() ?? filePath;
     try {
       const text = await api.readFile(filePath);
@@ -1718,7 +1719,7 @@ export class WorkspaceController implements WorkspaceApi {
         const result = await parseLightBurn(text);
         await this.applyLightBurnImport(result, baseName(name));
         await addRecentFile(filePath);
-        return;
+        return true;
       }
       const doc = parseDocument(text);
       // The window title follows the file name, like LightBurn.
@@ -1732,8 +1733,11 @@ export class WorkspaceController implements WorkspaceApi {
           : `Opened ${name}`,
       );
       if (!legacy) await addRecentFile(filePath);
+      await rememberProject(store.getState().doc, legacy ? null : filePath);
+      return true;
     } catch (err) {
       this.setStatus(`Open failed: ${(err as Error).message}`);
+      return false;
     }
   }
 
@@ -1803,16 +1807,17 @@ export class WorkspaceController implements WorkspaceApi {
     }
   }
 
-  /** Open a project downloaded from Google Drive. The local file path stays unset. */
-  async openSyncedDocument(doc: unknown): Promise<boolean> {
+  /** Open a project from Google Drive or from the on-device library. The file path stays unset. */
+  async openSyncedDocument(doc: unknown, source: 'drive' | 'device' = 'drive'): Promise<boolean> {
     try {
       const parsed = parseDocument(JSON.stringify(doc));
       await this.applyDocument(parsed, null);
       store.markDirty(false);
-      this.setStatus(`Opened ${parsed.meta.name || 'project'} from Google Drive`);
+      const place = source === 'device' ? 'this device' : 'Google Drive';
+      this.setStatus(`Opened ${parsed.meta.name || 'project'} from ${place}`);
       return true;
     } catch (err) {
-      this.setStatus(`Could not open the Drive project: ${(err as Error).message}`);
+      this.setStatus(`Could not open the project: ${(err as Error).message}`);
       return false;
     }
   }
@@ -1858,32 +1863,32 @@ export class WorkspaceController implements WorkspaceApi {
     }
   }
 
-  async openDocument(): Promise<void> {
+  async openDocument(): Promise<boolean> {
     const file = await pickProject();
-    if (!file) return;
-    if (file.path) {
-      await this.openPath(file.path);
-      return;
-    }
-    if (!file.text) return;
-    // Browser fallback: no absolute path, so the file cannot become "recent".
+    if (!file) return false;
+    if (file.path) return this.openPath(file.path);
+    if (!file.text) return false;
+    // Browser fallback: no absolute path, so the file is remembered in IndexedDB.
     try {
       if (/\.(lbrn|lbrn2)$/i.test(file.name)) {
         const result = await parseLightBurn(file.text);
         await this.applyLightBurnImport(result, baseName(file.name));
-        return;
+        return true;
       }
       const doc = parseDocument(file.text);
       doc.meta = { ...doc.meta, name: file.name };
       const legacyProject = /\.ovbrn$/i.test(file.name);
       await this.applyDocument(doc, null);
+      await rememberProject(store.getState().doc, null);
       this.setStatus(
         legacyProject
           ? `Opened legacy ${file.name} — use Save As to convert it to .obrn`
           : `Opened ${file.name}`,
       );
+      return true;
     } catch (err) {
       this.setStatus(`Open failed: ${(err as Error).message}`);
+      return false;
     }
   }
 
@@ -1981,12 +1986,14 @@ export class WorkspaceController implements WorkspaceApi {
       saveAs ? null : s.filePath,
     );
     if (!path) return;
+    const saved = { ...doc, meta: { ...doc.meta, name: baseName(path) } };
     store.setState({
-      doc: { ...doc, meta: { ...doc.meta, name: baseName(path) } },
+      doc: saved,
       filePath: path,
       dirty: false,
     });
     await addRecentFile(path);
+    await rememberProject(saved, filesystemPath(path));
     this.currentSnapshot = this.snapshot();
     this.setStatus('Saved');
   }
@@ -4212,8 +4219,8 @@ export class WorkspaceController implements WorkspaceApi {
       return;
     }
 
-    // Dialogs own their keyboard handling; don't fire canvas shortcuts.
-    if (document.querySelector('.dialog-backdrop')) return;
+    // Dialogs and the home screen own the keyboard; don't fire canvas shortcuts.
+    if (document.querySelector('.dialog-backdrop') || document.querySelector('[data-home-screen]')) return;
 
     // Interactive transform tools own the keyboard until confirmed/cancelled.
     if (this.mirrorMode || this.rotate2Mode) {

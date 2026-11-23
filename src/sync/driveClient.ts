@@ -13,6 +13,12 @@ export type DriveFetch = (
   init: { method: string; headers: Record<string, string>; body?: string },
 ) => Promise<FetchResponse>;
 
+/** Browser fetch used by the Drive dialog and the home screen. */
+export const browserDriveFetch: DriveFetch = async (url, init) => {
+  const response = await fetch(url, init);
+  return { status: response.status, text: await response.text() };
+};
+
 export function driveError(status: number): string {
   if (status === 401 || status === 403) {
     return 'Google refused this site. Add this page’s address as an authorized JavaScript origin on the OAuth client.';

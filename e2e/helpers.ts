@@ -26,11 +26,29 @@ export function launchEnv(profile: string): Record<string, string> {
   return env;
 }
 
-/** Close the start screen when it is showing. */
+/** Leave the home screen (or a recovery prompt) and enter the editor. */
 export async function dismissWelcome(page: Page): Promise<boolean> {
+  const recovery = page.locator('.dialog-header', { hasText: 'Recover Unsaved Work' });
+  if (await recovery.isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Discard', exact: true }).click();
+    await recovery.waitFor({ state: 'detached' });
+  }
+
+  const home = page.locator('[data-home-screen]');
+  try {
+    await home.waitFor({ state: 'visible', timeout: 5000 });
+  } catch {
+    return dismissLegacyWelcome(page);
+  }
+  await page.getByRole('button', { name: 'New project', exact: true }).click();
+  await home.waitFor({ state: 'hidden' });
+  return true;
+}
+
+async function dismissLegacyWelcome(page: Page): Promise<boolean> {
   const welcome = page.locator('.dialog-header', { hasText: 'Welcome to SunBurn' });
   try {
-    await welcome.waitFor({ state: 'visible', timeout: 5000 });
+    await welcome.waitFor({ state: 'visible', timeout: 1000 });
   } catch {
     return false;
   }

@@ -9,6 +9,8 @@ export const PROJECT_PREFIX = 'sunburn-project-';
 export interface NamedBody {
   name: string;
   body: string;
+  /** Drive modifiedTime, when this body was downloaded from a listed file. */
+  modifiedTime?: string;
 }
 
 export interface SyncSettings {
@@ -24,6 +26,10 @@ export interface SyncProject {
   id: string;
   name: string;
   document: unknown;
+  /** SVG or PNG data URL of the artwork on the bed, when the file has one. */
+  thumbnail?: string;
+  /** Drive modifiedTime, or the document's own updatedAt. */
+  modifiedAt?: string;
 }
 
 export interface ParsedLibrary {
@@ -74,18 +80,26 @@ export function buildSyncFiles(input: {
     },
   ];
   if (input.project) {
+    const body: Record<string, unknown> = {
+      kind: 'sunburn-project',
+      version: 1,
+      id: input.project.id,
+      name: input.project.name,
+      document: input.project.document,
+    };
+    if (input.project.thumbnail) body.thumbnail = input.project.thumbnail;
     files.push({
       name: projectFileName(input.project),
-      body: JSON.stringify({
-        kind: 'sunburn-project',
-        version: 1,
-        id: input.project.id,
-        name: input.project.name,
-        document: input.project.document,
-      }),
+      body: JSON.stringify(body),
     });
   }
   return files;
+}
+
+function documentUpdatedAt(document: unknown): string {
+  if (!document || typeof document !== 'object') return '';
+  const meta = (document as { meta?: { updatedAt?: unknown } }).meta;
+  return typeof meta?.updatedAt === 'string' ? meta.updatedAt : '';
 }
 
 export function parseSyncFiles(files: NamedBody[]): ParsedLibrary {
@@ -123,11 +137,17 @@ export function parseSyncFiles(files: NamedBody[]): ParsedLibrary {
     ) {
       result.layerPresets = record.presets as Record<string, unknown>;
     } else if (record.kind === 'sunburn-project' && record.document) {
-      result.projects.push({
+      const project: SyncProject = {
         id: String(record.id ?? file.name),
         name: String(record.name ?? 'Untitled'),
         document: record.document,
-      });
+      };
+      if (typeof record.thumbnail === 'string' && record.thumbnail.startsWith('data:image/')) {
+        project.thumbnail = record.thumbnail;
+      }
+      const modifiedAt = file.modifiedTime || documentUpdatedAt(record.document);
+      if (modifiedAt) project.modifiedAt = modifiedAt;
+      result.projects.push(project);
     }
   }
   return result;

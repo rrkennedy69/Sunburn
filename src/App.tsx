@@ -18,8 +18,9 @@ import { PreviewDialog } from '@/ui/PreviewDialog';
 import { UpdateBanner, UpdateDialog } from '@/ui/UpdateDialog';
 import { DiscardChangesDialog } from '@/ui/DiscardChangesDialog';
 import { RecoveryDialog } from '@/ui/RecoveryDialog';
-import { WelcomeDialog } from '@/ui/WelcomeDialog';
+import { HomeScreen } from '@/ui/HomeScreen';
 import { checkForUpdates } from '@/state/updateStore';
+import { confirmLeaveToHome } from '@/state/homeNavigation';
 import { DISCARD_CONFIRM_EVENT } from '@/state/discardGuard';
 import { AutosaveScheduler } from '@/state/autosave';
 import { refreshRecentFiles } from '@/state/recentStore';
@@ -36,7 +37,8 @@ export default function App() {
   const [previewPlan, setPreviewPlan] = useState<JobPlan | null>(null);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [homeOpen, setHomeOpen] = useState(true);
+  const [homeError, setHomeError] = useState<string | null>(null);
   const [recovery, setRecovery] = useState<OpenBurnAutosaveRecord | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const machineConnected = useMachineSelector((s) => s.connected);
@@ -101,24 +103,31 @@ export default function App() {
   useEffect(() => {
     void refreshRecentFiles();
     const api = window.openburn?.autosave;
-    if (!api) {
-      setWelcomeOpen(true);
-      return;
-    }
+    if (!api) return;
     let cancelled = false;
     api
       .read()
       .then((record) => {
         if (cancelled) return;
         if (record) setRecovery(record);
-        else setWelcomeOpen(true);
       })
-      .catch(() => {
-        if (!cancelled) setWelcomeOpen(true);
-      });
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const onHome = () => {
+      void confirmLeaveToHome().then((ok) => {
+        if (ok) {
+          setHomeError(null);
+          setHomeOpen(true);
+        }
+      });
+    };
+    window.addEventListener('openburn:home', onHome);
+    return () => window.removeEventListener('openburn:home', onHome);
   }, []);
 
   // Persist a draft of unsaved work so an unexpected exit can be recovered.
@@ -170,7 +179,10 @@ export default function App() {
         recovery.document,
         recovery.filePath,
       );
-      if (ok) setRecovery(null);
+      if (ok) {
+        setRecovery(null);
+        setHomeOpen(false);
+      }
     } finally {
       setRecoveryBusy(false);
     }
@@ -179,15 +191,34 @@ export default function App() {
   const discardDraft = async () => {
     await window.openburn?.autosave.clear();
     setRecovery(null);
-    setWelcomeOpen(true);
+  };
+
+  const openStored = async (
+    project: { name: string; document: unknown; filePath: string | null },
+    source: 'drive' | 'device',
+  ) => {
+    if (!controller) return;
+    setHomeError(null);
+    const ok = await controller.openSyncedDocument(project.document, source);
+    if (!ok) {
+      setHomeError(`Could not open ${project.name}.`);
+      return;
+    }
+    if (project.filePath) store.setState({ filePath: project.filePath });
+    setHomeOpen(false);
   };
 
   useEffect(() => {
+    if (homeOpen) {
+      document.title = 'SunBurn';
+      return;
+    }
     document.title = `${state.doc.meta.name || 'Untitled'}${state.dirty ? ' *' : ''} — SunBurn`;
-  }, [state.doc.meta.name, state.dirty]);
+  }, [homeOpen, state.doc.meta.name, state.dirty]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (document.querySelector('[data-home-screen]')) return;
       const dialogOpen = !!document.querySelector('.dialog-backdrop');
       const current = store.getState();
       const result = resolveJogKey(event.key, current.jog, {
@@ -236,7 +267,7 @@ export default function App() {
   return (
     <WorkspaceContext.Provider value={controller}>
       <UnitsContext.Provider value={state.doc.units}>
-        <div className="app">
+        <div className="app" aria-hidden={homeOpen || undefined}>
           <MenuBar />
           <div className="toolbar-top">
             <MainToolbar />
@@ -257,7 +288,27 @@ export default function App() {
         {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
         {deviceOpen && <DeviceSettingsDialog onClose={() => setDeviceOpen(false)} />}
         {updateOpen && <UpdateDialog onClose={() => setUpdateOpen(false)} />}
-        {welcomeOpen && !recovery && <WelcomeDialog onClose={() => setWelcomeOpen(false)} />}
+        {homeOpen && (
+          <HomeScreen
+            ready={!!controller}
+            error={homeError}
+            onNew={() => {
+              if (!controller) return;
+              controller.newDocument();
+              setHomeError(null);
+              setHomeOpen(false);
+            }}
+            onOpenFile={() => {
+              if (!controller) return;
+              setHomeError(null);
+              void controller.openDocument().then((opened) => {
+                if (opened) setHomeOpen(false);
+              });
+            }}
+            onOpenLocal={(project) => void openStored(project, 'device')}
+            onOpenDrive={(project) => void openStored(project, 'drive')}
+          />
+        )}
         {recovery && (
           <RecoveryDialog
             record={recovery}

@@ -52,6 +52,26 @@ describe('Google Drive library', () => {
     ]);
   });
 
+  it('keeps a project thumbnail and the Drive modified time', () => {
+    const parsed = parseSyncFiles([
+      {
+        name: 'sunburn-project-maple-20261122.json',
+        modifiedTime: '2026-11-22T12:00:00.000Z',
+        body: JSON.stringify({
+          kind: 'sunburn-project',
+          id: '20261122',
+          name: 'Maple sign',
+          thumbnail: 'data:image/svg+xml,bed',
+          document: { format: 'openburn', meta: { updatedAt: '2026-01-01T00:00:00.000Z' } },
+        }),
+      },
+    ]);
+    expect(parsed.projects[0]).toMatchObject({
+      thumbnail: 'data:image/svg+xml,bed',
+      modifiedAt: '2026-11-22T12:00:00.000Z',
+    });
+  });
+
   it('repairs a missing jog block with the defaults', () => {
     const parsed = parseSyncFiles([
       {
