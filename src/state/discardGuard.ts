@@ -6,8 +6,9 @@ export const DISCARD_CONFIRM_EVENT = 'openburn:confirm-discard';
 let resolver: ((ok: boolean) => void) | null = null;
 
 /**
- * Resolve to true when it is safe to replace the current document (it is clean
- * or the user chose Save/Discard), false when the user cancelled.
+ * Resolve to true when it is safe to replace the current document or leave it
+ * for the home screen (it is clean, or the user chose Save/Discard). False
+ * when the user cancelled.
  */
 export function requestDiscardConfirmation(): Promise<boolean> {
   if (!store.getState().dirty) return Promise.resolve(true);

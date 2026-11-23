@@ -5,11 +5,14 @@
  * client secret in the browser.
  */
 
+import { rememberDriveToken } from './driveSession';
+
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 export const DRIVE_APPDATA_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 
 interface TokenResponse {
   access_token?: string;
+  expires_in?: number;
   error?: string;
 }
 
@@ -59,7 +62,7 @@ export function loadGoogleIdentity(): Promise<void> {
   });
 }
 
-export async function requestDriveToken(clientId: string): Promise<string> {
+export async function requestDriveToken(clientId: string, prompt: '' | 'none' = ''): Promise<string> {
   await loadGoogleIdentity();
   const oauth = window.google?.accounts?.oauth2;
   if (!oauth) throw new Error('Google sign-in did not load.');
@@ -72,6 +75,11 @@ export async function requestDriveToken(clientId: string): Promise<string> {
         scope: DRIVE_APPDATA_SCOPE,
         callback: (response) => {
           if (response.access_token) {
+            const expires = Number(response.expires_in);
+            rememberDriveToken(
+              response.access_token,
+              Number.isFinite(expires) && expires > 0 ? expires : 3600,
+            );
             resolve(response.access_token);
             return;
           }
@@ -103,6 +111,6 @@ export async function requestDriveToken(clientId: string): Promise<string> {
       );
       return;
     }
-    client.requestAccessToken({ prompt: '' });
+    client.requestAccessToken({ prompt });
   });
 }

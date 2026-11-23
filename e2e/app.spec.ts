@@ -37,9 +37,14 @@ test.afterAll(async () => {
   removeTestProfile(profile);
 });
 
-test('shows the start screen on first launch and closes it', async () => {
-  await expect(page.locator('.dialog-header', { hasText: 'Welcome to SunBurn' })).toBeVisible();
+test('shows the home screen on first launch and opens a new project', async () => {
+  const home = page.locator('[data-home-screen]');
+  await expect(home).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'SunBurn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'New project' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open from disk' })).toBeVisible();
   expect(await dismissWelcome(page)).toBe(true);
+  await expect(home).toBeHidden();
 });
 
 test('opens the editor window', async () => {

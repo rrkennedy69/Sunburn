@@ -7,7 +7,9 @@ import type { SnapSettings } from '@/state/snapSettings';
 import { Modal, useWorkspace } from './common';
 import { readGoogleClientId, writeGoogleClientId } from '@/sync/clientId';
 import { requestDriveToken } from '@/sync/googleAuth';
-import { DriveClient, type DriveFetch } from '@/sync/driveClient';
+import { browserDriveFetch, DriveClient } from '@/sync/driveClient';
+import { renderProjectThumbnail } from '@/state/thumbnail';
+import { filesystemPath, rememberProject } from '@/state/projectLibrary';
 import {
   buildSyncFiles,
   parseSyncFiles,
@@ -19,11 +21,6 @@ import {
 interface Props {
   onClose: () => void;
 }
-
-const browserFetch: DriveFetch = async (url, init) => {
-  const response = await fetch(url, init);
-  return { status: response.status, text: await response.text() };
-};
 
 /**
  * Save and open, matching PrintCaddy's Drive buttons. Saving also writes
@@ -57,6 +54,8 @@ export function GoogleSyncDialog({ onClose }: Props) {
       const token = await tokenFor();
       if (!token) return;
       const doc = ws?.snapshotDocument() ?? state.doc;
+      const thumbnail = await renderProjectThumbnail(doc);
+      await rememberProject(doc, filesystemPath(state.filePath), thumbnail);
       const files = buildSyncFiles({
         settings: {
           device: state.device,
@@ -72,9 +71,10 @@ export function GoogleSyncDialog({ onClose }: Props) {
           id: projectIdFromMeta(doc.meta),
           name: doc.meta.name || 'Untitled',
           document: doc,
+          thumbnail,
         },
       });
-      const client = new DriveClient(token, browserFetch);
+      const client = new DriveClient(token, browserDriveFetch);
       const existing = await client.listSunburnFiles();
       for (const plan of planUploads(existing, files)) await client.upsert(plan);
       const name = doc.meta.name || 'Untitled';
@@ -125,7 +125,7 @@ export function GoogleSyncDialog({ onClose }: Props) {
     try {
       const token = await tokenFor();
       if (!token) return;
-      const client = new DriveClient(token, browserFetch);
+      const client = new DriveClient(token, browserDriveFetch);
       const listed = await client.listSunburnFiles();
       if (listed.length === 0) {
         setProjects([]);

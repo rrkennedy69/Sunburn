@@ -432,12 +432,12 @@ export interface DroppedFile {
  */
 export interface WorkspaceApi {
   newDocument(): void;
-  openDocument(): Promise<void>;
-  openPath(filePath: string): Promise<void>;
+  openDocument(): Promise<boolean>;
+  openPath(filePath: string): Promise<boolean>;
   dropFiles(files: DroppedFile[], at?: { x: number; y: number }): Promise<void>;
   snapshotDocument(): OpenBurnDocument;
   applyRecoveredDocument(doc: unknown, filePath: string | null): Promise<boolean>;
-  openSyncedDocument(doc: unknown): Promise<boolean>;
+  openSyncedDocument(doc: unknown, source?: 'drive' | 'device'): Promise<boolean>;
   getScenePointFromClient(clientX: number, clientY: number): { x: number; y: number } | null;
   openLightBurn(): Promise<void>;
   saveLightBurn(format: 'lbrn' | 'lbrn2'): Promise<void>;

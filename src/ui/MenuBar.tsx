@@ -3,6 +3,7 @@ import { useAppState, store, type ToolId, type WorkspaceApi } from '@/state/stor
 import { requestDiscardConfirmation } from '@/state/discardGuard';
 import { useRecentFiles, clearRecentFiles } from '@/state/recentStore';
 import { Icon } from './icons';
+import { SunMark } from './SunMark';
 import { Modal, NumberField, useUnits, useWorkspace } from './common';
 import { ImageAdjustDialog, TabsDialog, TraceDialog } from './ImageToolsDialogs';
 import { GoogleSyncDialog } from './GoogleSyncDialog';
@@ -59,6 +60,10 @@ const MENUS: MenuDef[] = [
   {
     label: 'File',
     entries: ({ ws, recent }) => [
+      {
+        label: 'Home',
+        action: () => window.dispatchEvent(new Event('openburn:home')),
+      },
       { label: 'New', shortcut: 'Ctrl+N', action: () => void guardThen(() => ws?.newDocument()) },
       { label: 'Open…', shortcut: 'Ctrl+O', action: () => void guardThen(() => void ws?.openDocument()) },
       { label: 'Open LightBurn Project…', action: () => void guardThen(() => void ws?.openLightBurn()) },
@@ -369,18 +374,19 @@ export function MenuBar() {
 
   return (
     <div className="app-header" ref={rootRef}>
-      <div className="brand">
-        <svg className="sun-mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-          <circle cx="16" cy="16" r="5.5" fill="#c47a2c" />
-          <g stroke="#c47a2c" strokeWidth="2" strokeLinecap="round">
-            <path d="M16 2.5v4.2M16 25.3v4.2M2.5 16h4.2M25.3 16h4.2M6.2 6.2l3 3M22.8 22.8l3 3M25.8 6.2l-3 3M9.2 22.8l-3 3" />
-          </g>
-        </svg>
-        <div className="brand-copy">
-          <div className="brand-name">SunBurn</div>
-          <div className="brand-tag">Laser cutting and engraving</div>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="brand"
+        aria-label="SunBurn home"
+        title="Home"
+        onClick={() => window.dispatchEvent(new Event('openburn:home'))}
+      >
+        <SunMark />
+        <span className="brand-copy">
+          <span className="brand-name">SunBurn</span>
+          <span className="brand-tag">Laser cutting and engraving</span>
+        </span>
+      </button>
       <div className="menubar">
 
       {MENUS.map((menu) => {

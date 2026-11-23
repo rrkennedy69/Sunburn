@@ -31,8 +31,8 @@ if (import.meta.env.DEV) {
   void import('./types/document').then((m) => {
     (window as unknown as { __openburnLayers?: unknown }).__openburnLayers = m;
   });
-  // Documentation screenshots capture the whole window without the welcome
-  // dialog. Double opt-in: debug build + `?capture=docs` (see `npm run docs:screenshots`).
+  // Documentation screenshots capture the editor. The harness leaves the home
+  // screen itself. Double opt-in: debug build + `?capture=docs` (see `npm run docs:screenshots`).
   const search = window.location.search;
   const captureSession = __CAPTURE_SESSION__ === true;
   if (captureSession && search.includes('capture=docs')) {

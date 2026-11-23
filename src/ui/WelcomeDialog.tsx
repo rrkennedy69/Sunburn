@@ -18,7 +18,10 @@ function folderOf(filePath: string): string {
   return parts.slice(-2).join('/');
 }
 
-/** Lightweight start screen shown when the app launches without a document. */
+/**
+ * Earlier start dialog. The home screen replaced it on launch; this stays so
+ * the recent-file dialog can still be tested on its own.
+ */
 export function WelcomeDialog({ onClose }: Props) {
   const ws = useWorkspace();
   const recent = useRecentFiles();

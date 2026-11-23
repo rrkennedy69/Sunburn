@@ -8,6 +8,14 @@ The editor is [OpenBurn](https://github.com/SJLS27/openburn) 0.11.0 (MIT), rebra
 
 The browser app is the one to use. An Electron shell is still in the repo.
 
+## Home
+
+SunBurn opens on a home screen instead of an empty editor. Projects you save are kept in this browser (IndexedDB) as a grid: a thumbnail of the artwork on the bed, the project name, and the last-modified date. From there you can open a project, start a new one, or open a `.obrn` file from disk.
+
+If you are signed in to Google Drive, projects saved there are listed too. Signing in uses the same client ID as File → Google Drive. A thumbnail is generated whenever a project is saved, including Save to Drive.
+
+The sun mark at the top left of the editor returns to Home. When the open project has unsaved changes, SunBurn asks you to save, discard, or cancel.
+
 ## Run it locally
 
 Node 22 or newer.

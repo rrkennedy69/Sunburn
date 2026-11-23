@@ -223,7 +223,14 @@ src/App.tsx ── AutosaveScheduler (debounce 2 s / flush 30 s) ──► IPC '
   siguiente arranque ofrece recuperarlo y lo restaura como cambios sin guardar.
 - **Recientes**: `electron/recentFiles.ts` mantiene hasta 10 rutas en
   `userData/recent-files.json` (deduplicadas, filtrando archivos que ya no
-  existen). Alimenta `File → Open Recent` y la pantalla de bienvenida.
+  existen). Alimenta `File → Open Recent`.
+- **Inicio**: `src/ui/HomeScreen.tsx` cubre el editor al arrancar. Los
+  proyectos guardados o abiertos en el navegador viven en IndexedDB
+  (`src/state/projectLibrary.ts`) con una miniatura del diseño sobre la cama
+  (`src/state/thumbnail.ts`). Si hay sesión de Google Drive, la misma pantalla
+  lista los proyectos del app-data folder. El sol de la barra superior
+  (`openburn:home`) vuelve al inicio y reutiliza el diálogo Guardar /
+  Descartar / Cancelar.
 - **Ventana**: `electron/windowState.ts` valida los bounds guardados contra los
   monitores actuales (mínimo visible, monitor desaparecido, tamaño máximo) y los
   persiste con debounce en `resize`/`move` y al cerrar.
@@ -232,8 +239,8 @@ src/App.tsx ── AutosaveScheduler (debounce 2 s / flush 30 s) ──► IPC '
   eliminó `File.path`) y cae a `File.text()`/`arrayBuffer()` en navegador.
   `will-navigate` está bloqueado para que un drop no saque la app del editor.
 - **Descartes**: `src/state/discardGuard.ts` centraliza la confirmación
-  Guardar / Descartar / Cancelar que usan New, Open, Open Recent y el drop de
-  proyectos.
+  Guardar / Descartar / Cancelar que usan New, Open, Open Recent, el drop de
+  proyectos y la vuelta al inicio.
 - **Perfiles aislados**: `OPENBURN_USER_DATA_DIR` redirige todo el estado del
   main (ventana, borradores, recientes); los e2e lo apuntan a un directorio
   temporal para no tocar la configuración real.
@@ -255,14 +262,14 @@ La política completa está en [AGENTS.md](../AGENTS.md).
     `src/workspace/snap.test.ts`, `src/state/snapSettings.test.ts`,
     `src/ui/StatusBar.test.tsx`.
   - Componentes: `src/ui/UpdateDialog.test.tsx`,
-    `src/ui/WelcomeDialog.test.tsx`, `src/ui/DiscardChangesDialog.test.tsx`,
-    `src/ui/RecoveryDialog.test.tsx`.
+    `src/ui/HomeScreen.test.tsx`, `src/ui/WelcomeDialog.test.tsx`,
+    `src/ui/DiscardChangesDialog.test.tsx`, `src/ui/RecoveryDialog.test.tsx`.
   - Proceso principal: `electron/updater.test.ts`, `electron/windowState.test.ts`,
     `electron/autosave.test.ts`, `electron/recentFiles.test.ts`,
     `electron/storage.test.ts` (mockean `electron` y usan un `userData` temporal).
 - **End-to-end**: Playwright `_electron` sobre `dist/` + `dist-electron/`
   (`playwright.config.ts`, specs en `e2e/`). Cubre arranque de la ventana y
-  pantalla de bienvenida, versión del proceso principal, actualizaciones,
+  la pantalla de inicio, versión del proceso principal, actualizaciones,
   portapapeles, paneo, recuperación tras un cierre abrupto, drag & drop,
   recientes, edición de nodos y snapping, y restauración del tamaño de
   ventana. Cada spec usa un perfil temporal (`OPENBURN_USER_DATA_DIR`).
